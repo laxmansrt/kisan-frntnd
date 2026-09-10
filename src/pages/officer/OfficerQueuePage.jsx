@@ -22,8 +22,9 @@ export default function OfficerQueuePage() {
 
   function connectWs() {
     if (wsRef.current) wsRef.current.close();
+    const wsBase = import.meta.env.VITE_WS_URL || (location.hostname === 'localhost' ? `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}` : 'wss://kisan-backend-qhzg.onrender.com');
     const ws = new WebSocket(
-      `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws?type=officer&id=${officer.center_id}&token=${token}`
+      `${wsBase}/ws?type=officer&id=${officer.center_id}&token=${token}`
     );
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data);
