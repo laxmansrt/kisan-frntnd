@@ -29,7 +29,9 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
       setStep('otp');
-      if (data.dev_otp) setDevOtp(data.dev_otp);
+      const receivedOtp = data.dev_otp || '123456';
+      setDevOtp(receivedOtp);
+      setOtp(receivedOtp); // Auto-prefill the OTP in the input box!
       startCountdown();
     } catch (err) {
       setError(err.message);
@@ -38,14 +40,18 @@ export default function LoginPage() {
     }
   }
 
+  function fillDemoFarmer() {
+    setMobile('9876543210');
+  }
+
   async function verifyOtp(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError(''); setLoading(true);
     try {
       const res = await fetch('/api/auth/farmer/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile_number: mobile, otp_code: otp }),
+        body: JSON.stringify({ mobile_number: mobile, otp_code: otp || '123456' }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid OTP');
@@ -68,13 +74,43 @@ export default function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-logo">🌾</div>
+      <img
+        src="/logo.png"
+        alt="KisanSaathi"
+        style={{
+          width: 104,
+          height: 104,
+          borderRadius: 24,
+          marginBottom: 16,
+          boxShadow: '0 8px 24px rgba(27,94,63,0.18)',
+          objectFit: 'cover',
+        }}
+      />
       <h1 className="login-title">{t('app_name')}</h1>
       <p className="login-subtitle">{t('tagline')}</p>
 
       <div className="login-form">
         {step === 'mobile' ? (
           <form onSubmit={requestOtp}>
+            {/* Demo Helper Banner */}
+            <div className="pending-banner mb-4" style={{ background: '#f0fdf4', borderColor: '#86efac' }}>
+              <span className="pending-banner__icon">💡</span>
+              <div style={{ flex: 1 }}>
+                <div className="pending-banner__label" style={{ color: '#166534', fontWeight: 600 }}>Demo / Testing Mode</div>
+                <p className="text-muted text-sm mb-2" style={{ margin: '4px 0 8px 0', fontSize: '0.82rem' }}>
+                  No real SMS needed! Enter any 10-digit number or click below:
+                </p>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--secondary"
+                  style={{ fontSize: '0.8rem', padding: '4px 10px', width: 'auto' }}
+                  onClick={fillDemoFarmer}
+                >
+                  ⚡ Fill Demo Phone (9876543210)
+                </button>
+              </div>
+            </div>
+
             <div className="form-group">
               <label className="form-label" htmlFor="mobile">{t('mobile_label')}</label>
               <input
@@ -83,9 +119,10 @@ export default function LoginPage() {
                 type="tel"
                 placeholder={t('mobile_placeholder')}
                 value={mobile}
-                onChange={e => setMobile(e.target.value)}
+                onChange={e => setMobile(e.target.value.replace(/\D/g, ''))}
                 required
                 autoComplete="tel"
+                maxLength={10}
                 style={{ fontSize: '1.25rem', letterSpacing: '0.05em' }}
               />
             </div>
@@ -100,20 +137,20 @@ export default function LoginPage() {
               {t('otp_sent')}: <strong>{mobile}</strong>
             </p>
 
-            <div className="pending-banner mb-4">
+            <div className="pending-banner mb-4" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
               <span className="pending-banner__icon">🔑</span>
-              <div>
-                <div className="pending-banner__label">Demo OTP</div>
-                <div className="pending-banner__text" style={{ fontFamily: 'monospace', fontSize: '1.4rem', fontWeight: 700, letterSpacing: '0.1em' }}>
+              <div style={{ flex: 1 }}>
+                <div className="pending-banner__label" style={{ color: '#92400e', fontWeight: 600 }}>Demo OTP (Pre-filled)</div>
+                <div className="pending-banner__text" style={{ fontFamily: 'monospace', fontSize: '1.5rem', fontWeight: 800, color: '#b45309', letterSpacing: '0.15em', margin: '4px 0' }}>
                   {devOtp || '123456'}
                 </div>
                 <button
                   type="button"
                   className="btn btn--sm btn--ghost"
-                  style={{ padding: '2px 8px', fontSize: '0.75rem', marginTop: 4 }}
+                  style={{ padding: '2px 8px', fontSize: '0.75rem', marginTop: 2, color: '#92400e', borderColor: '#fcd34d' }}
                   onClick={() => setOtp(devOtp || '123456')}
                 >
-                  ⚡ Auto-fill OTP
+                  ⚡ Re-fill OTP ({devOtp || '123456'})
                 </button>
               </div>
             </div>

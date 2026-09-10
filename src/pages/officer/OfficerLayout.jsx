@@ -159,7 +159,7 @@ function Layout() {
           >
             {drawerOpen ? <IconClose /> : <IconMenu />}
           </button>
-          <span style={{ fontWeight: 700, fontSize: '1rem' }}>🏛️ GovProcure</span>
+          <span style={{ fontWeight: 700, fontSize: '1rem' }}>🏛️ KisanSaathi</span>
           <span style={{ fontSize: '0.75rem', opacity: 0.5, marginLeft: 'auto', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>
             {officer.center_name}
           </span>
@@ -196,7 +196,7 @@ function SidebarContent({ officer, logout, navigate, isActive }) {
   return (
     <>
       <div style={{ padding: '0 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: 12 }}>
-        <div style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.3 }}>🏛️ GovProcure</div>
+        <div style={{ fontWeight: 700, fontSize: '1rem', lineHeight: 1.3 }}>🏛️ KisanSaathi</div>
         <div style={{ fontSize: '0.7rem', opacity: 0.5, marginTop: 3 }}>Officer Portal</div>
       </div>
 

@@ -38,7 +38,10 @@ export default function FarmerLayout() {
     <div className="app-shell">
       {/* Header */}
       <header className="app-header">
-        <div className="app-header__logo">🌾 {t('app_name')}</div>
+        <div className="app-header__logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <img src="/icon-192.png" alt="KisanSaathi" style={{ width: 26, height: 26, borderRadius: 6, objectFit: 'cover' }} />
+          <span>{t('app_name')}</span>
+        </div>
         <div className="app-header__actions">
           <button className="lang-toggle" onClick={toggleLang} aria-label="Toggle language">
             {lang === 'en' ? 'हिं' : 'EN'}

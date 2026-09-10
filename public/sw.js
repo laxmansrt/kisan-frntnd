@@ -8,11 +8,13 @@
  *   - Background Sync:         Offline registration queue
  */
 
-const CACHE_NAME = 'govprocure-v1';
+const CACHE_NAME = 'kisansaathi-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
 ];
 
 // ── Install: pre-cache app shell ──────────────────────────
@@ -42,7 +44,7 @@ self.addEventListener('fetch', (event) => {
   if (url.pathname.startsWith('/api/') && request.method !== 'GET') return;
 
   // Stale-while-revalidate for farmer status API
-  if (url.pathname.match(/^\/api\/farmers\/\d+\/status/)) {
+  if (url.pathname.match(/^\/api\/farmers\/[a-zA-Z0-9_-]+\/status/)) {
     event.respondWith(staleWhileRevalidate(request));
     return;
   }
@@ -99,7 +101,7 @@ async function syncPendingRegistrations() {
 self.addEventListener('push', (event) => {
   const data = event.data?.json() || {};
   event.waitUntil(
-    self.registration.showNotification(data.title || 'GovProcure Update', {
+    self.registration.showNotification(data.title || 'KisanSaathi Update', {
       body: data.body || 'Your procurement status has been updated.',
       icon: '/icon-192.png',
       badge: '/icon-192.png',

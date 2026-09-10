@@ -1,6 +1,6 @@
 export const en = {
-  app_name: 'GovProcure',
-  tagline: 'Crop Procurement Made Simple',
+  app_name: 'KisanSaathi',
+  tagline: 'Smart Farmer Procurement Made Simple',
 
   // Nav
   nav_dashboard: 'Dashboard',

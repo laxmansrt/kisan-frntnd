@@ -19,6 +19,7 @@ import OfficerProcurePage from './pages/officer/OfficerProcurePage';
 import OfficerPaymentPage from './pages/officer/OfficerPaymentPage';
 import OfficerSlotsPage from './pages/officer/OfficerSlotsPage';
 import OfficerAssistedRegisterPage from './pages/officer/OfficerAssistedRegisterPage';
+import InstallPrompt from './components/InstallPrompt';
 
 function FarmerPrivateRoute({ children }) {
   const { token } = useAuth();
@@ -53,6 +54,7 @@ export default function App() {
               <Route path="assisted-register" element={<OfficerAssistedRegisterPage />} />
             </Route>
           </Routes>
+          <InstallPrompt />
         </AuthProvider>
       </LangProvider>
     </BrowserRouter>

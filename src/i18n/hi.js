@@ -1,6 +1,6 @@
 export const hi = {
-  app_name: 'गवProcure',
-  tagline: 'फसल खरीद, आसान तरीके से',
+  app_name: 'किसानसाथी (KisanSaathi)',
+  tagline: 'फसल खरीद, आसान और सुरक्षित',
 
   // Nav
   nav_dashboard: 'डैशबोर्ड',
