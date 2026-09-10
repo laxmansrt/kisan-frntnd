@@ -100,17 +100,23 @@ export default function LoginPage() {
               {t('otp_sent')}: <strong>{mobile}</strong>
             </p>
 
-            {devOtp && (
-              <div className="pending-banner mb-4">
-                <span className="pending-banner__icon">🔑</span>
-                <div>
-                  <div className="pending-banner__label">Dev Mode OTP</div>
-                  <div className="pending-banner__text" style={{ fontFamily: 'monospace', fontSize: '1.5rem', fontWeight: 700, letterSpacing: '0.1em' }}>
-                    {devOtp}
-                  </div>
+            <div className="pending-banner mb-4">
+              <span className="pending-banner__icon">🔑</span>
+              <div>
+                <div className="pending-banner__label">Demo OTP</div>
+                <div className="pending-banner__text" style={{ fontFamily: 'monospace', fontSize: '1.4rem', fontWeight: 700, letterSpacing: '0.1em' }}>
+                  {devOtp || '123456'}
                 </div>
+                <button
+                  type="button"
+                  className="btn btn--sm btn--ghost"
+                  style={{ padding: '2px 8px', fontSize: '0.75rem', marginTop: 4 }}
+                  onClick={() => setOtp(devOtp || '123456')}
+                >
+                  ⚡ Auto-fill OTP
+                </button>
               </div>
-            )}
+            </div>
 
             <div className="form-group">
               <label className="form-label" htmlFor="otp">{t('otp_label')}</label>
