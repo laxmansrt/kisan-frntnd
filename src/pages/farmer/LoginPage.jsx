@@ -1,60 +1,69 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLang } from '../../context/LangContext';
+import PatternLock from '../../components/PatternLock';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const { t } = useLang();
   const navigate = useNavigate();
 
-  const [step, setStep] = useState('mobile'); // 'mobile' | 'otp'
+  const [authMode, setAuthMode] = useState('password'); // 'password' | 'pattern'
   const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
+  const [password, setPassword] = useState('');
+  const [pattern, setPattern] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [devOtp, setDevOtp] = useState('');
-  const [countdown, setCountdown] = useState(0);
-  const timerRef = useRef(null);
 
-  async function requestOtp(e) {
-    e.preventDefault();
-    setError(''); setLoading(true);
-    try {
-      const res = await fetch('/api/auth/farmer/request-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile_number: mobile }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
-      setStep('otp');
-      const receivedOtp = data.dev_otp || '123456';
-      setDevOtp(receivedOtp);
-      setOtp(receivedOtp); // Auto-prefill the OTP in the input box!
-      startCountdown();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function fillDemoFarmer() {
+  // 1-Click Demo Fill
+  function fillDemoCredentials() {
     setMobile('9876543210');
+    setPassword('farmer123');
+    setPattern('1-2-3-5');
+    setError('');
   }
 
-  async function verifyOtp(e) {
+  async function handleLogin(e) {
     if (e) e.preventDefault();
-    setError(''); setLoading(true);
+    setError('');
+
+    const cleanMobile = mobile.trim().replace(/\D/g, '');
+    if (cleanMobile.length < 10) {
+      setError('Please enter a valid 10-digit mobile number');
+      return;
+    }
+
+    if (authMode === 'password' && !password.trim()) {
+      setError('Please enter your password or PIN');
+      return;
+    }
+
+    if (authMode === 'pattern' && !pattern) {
+      setError('Please draw your pattern lock (connect at least 3 dots)');
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const res = await fetch('/api/auth/farmer/verify-otp', {
+      const payload = {
+        mobile_number: cleanMobile,
+        ...(authMode === 'password' ? { password: password.trim() } : { pattern }),
+      };
+
+      const res = await fetch('/api/auth/farmer/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mobile_number: mobile, otp_code: otp || '123456' }),
+        body: JSON.stringify(payload),
       });
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Invalid OTP');
+      if (!res.ok) {
+        throw new Error(data.error || 'Login failed. Please check your credentials.');
+      }
+
       login(data.farmer, data.token);
       navigate('/dashboard');
     } catch (err) {
@@ -64,22 +73,14 @@ export default function LoginPage() {
     }
   }
 
-  function startCountdown() {
-    setCountdown(30);
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setCountdown(c => { if (c <= 1) { clearInterval(timerRef.current); return 0; } return c - 1; });
-    }, 1000);
-  }
-
   return (
     <div className="login-page">
       <img
         src="/logo.png"
         alt="KisanSaathi"
         style={{
-          width: 104,
-          height: 104,
+          width: 100,
+          height: 100,
           borderRadius: 24,
           marginBottom: 16,
           boxShadow: '0 8px 24px rgba(27,94,63,0.18)',
@@ -89,110 +90,217 @@ export default function LoginPage() {
       <h1 className="login-title">{t('app_name')}</h1>
       <p className="login-subtitle">{t('tagline')}</p>
 
-      <div className="login-form">
-        {step === 'mobile' ? (
-          <form onSubmit={requestOtp}>
-            {/* Demo Helper Banner */}
-            <div className="pending-banner mb-4" style={{ background: '#f0fdf4', borderColor: '#86efac' }}>
-              <span className="pending-banner__icon">💡</span>
-              <div style={{ flex: 1 }}>
-                <div className="pending-banner__label" style={{ color: '#166534', fontWeight: 600 }}>Demo / Testing Mode</div>
-                <p className="text-muted text-sm mb-2" style={{ margin: '4px 0 8px 0', fontSize: '0.82rem' }}>
-                  No real SMS needed! Enter any 10-digit number or click below:
-                </p>
-                <button
-                  type="button"
-                  className="btn btn--sm btn--secondary"
-                  style={{ fontSize: '0.8rem', padding: '4px 10px', width: 'auto' }}
-                  onClick={fillDemoFarmer}
-                >
-                  ⚡ Fill Demo Phone (9876543210)
-                </button>
-              </div>
+      <div className="login-form" style={{ maxWidth: 420, width: '100%' }}>
+        {/* Demo Helper Banner */}
+        <div
+          className="pending-banner mb-4"
+          style={{
+            background: '#f0fdf4',
+            borderColor: '#86efac',
+            borderRadius: 16,
+            padding: '12px 14px',
+          }}
+        >
+          <span className="pending-banner__icon" style={{ fontSize: '1.4rem' }}>🌾</span>
+          <div style={{ flex: 1 }}>
+            <div className="pending-banner__label" style={{ color: '#166534', fontWeight: 700 }}>
+              Quick Demo & Instant Access
             </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="mobile">{t('mobile_label')}</label>
-              <input
-                id="mobile"
-                className="form-input"
-                type="tel"
-                placeholder={t('mobile_placeholder')}
-                value={mobile}
-                onChange={e => setMobile(e.target.value.replace(/\D/g, ''))}
-                required
-                autoComplete="tel"
-                maxLength={10}
-                style={{ fontSize: '1.25rem', letterSpacing: '0.05em' }}
-              />
-            </div>
-            {error && <p className="form-error">⚠ {error}</p>}
-            <button className="btn btn--primary" type="submit" disabled={loading || mobile.length < 10}>
-              {loading ? t('loading') : t('send_otp')}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={verifyOtp}>
-            <p className="text-muted mb-4" style={{ fontSize: '0.9rem' }}>
-              {t('otp_sent')}: <strong>{mobile}</strong>
+            <p style={{ margin: '4px 0 8px 0', fontSize: '0.8rem', color: '#15803d' }}>
+              No SMS delays! One click fills sample farmer credentials:
             </p>
+            <button
+              type="button"
+              className="btn btn--sm btn--secondary"
+              style={{
+                fontSize: '0.8rem',
+                padding: '6px 12px',
+                width: '100%',
+                fontWeight: 600,
+                borderColor: '#86efac',
+                background: '#ffffff',
+                color: '#166534',
+              }}
+              onClick={fillDemoCredentials}
+            >
+              {t('demo_fill_btn')}
+            </button>
+          </div>
+        </div>
 
-            <div className="pending-banner mb-4" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
-              <span className="pending-banner__icon">🔑</span>
-              <div style={{ flex: 1 }}>
-                <div className="pending-banner__label" style={{ color: '#92400e', fontWeight: 600 }}>Demo OTP (Pre-filled)</div>
-                <div className="pending-banner__text" style={{ fontFamily: 'monospace', fontSize: '1.5rem', fontWeight: 800, color: '#b45309', letterSpacing: '0.15em', margin: '4px 0' }}>
-                  {devOtp || '123456'}
-                </div>
+        <form onSubmit={handleLogin}>
+          {/* Mobile Number Input */}
+          <div className="form-group mb-4">
+            <label className="form-label" htmlFor="mobile" style={{ fontWeight: 600 }}>
+              {t('mobile_label')}
+            </label>
+            <input
+              id="mobile"
+              className="form-input"
+              type="tel"
+              placeholder={t('mobile_placeholder')}
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value.replace(/\D/g, ''))}
+              required
+              autoComplete="tel"
+              maxLength={10}
+              style={{ fontSize: '1.25rem', letterSpacing: '0.06em', textAlign: 'center', fontWeight: 600 }}
+            />
+          </div>
+
+          {/* Auth Method Selector Tabs */}
+          <div
+            style={{
+              display: 'flex',
+              background: '#f1f5f9',
+              borderRadius: 12,
+              padding: 4,
+              marginBottom: 16,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => { setAuthMode('password'); setError(''); }}
+              style={{
+                flex: 1,
+                padding: '10px 8px',
+                border: 'none',
+                borderRadius: 9,
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                background: authMode === 'password' ? '#ffffff' : 'transparent',
+                color: authMode === 'password' ? '#1B5E3F' : '#64748b',
+                boxShadow: authMode === 'password' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              🔑 {t('auth_mode_password')}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setAuthMode('pattern'); setError(''); }}
+              style={{
+                flex: 1,
+                padding: '10px 8px',
+                border: 'none',
+                borderRadius: 9,
+                fontSize: '0.9rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                background: authMode === 'pattern' ? '#ffffff' : 'transparent',
+                color: authMode === 'pattern' ? '#1B5E3F' : '#64748b',
+                boxShadow: authMode === 'pattern' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              🔲 {t('auth_mode_pattern')}
+            </button>
+          </div>
+
+          {/* Auth Input: Password / PIN Mode */}
+          {authMode === 'password' && (
+            <div className="form-group mb-4">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="form-label" htmlFor="password" style={{ fontWeight: 600 }}>
+                  {t('password_label')}
+                </label>
                 <button
                   type="button"
-                  className="btn btn--sm btn--ghost"
-                  style={{ padding: '2px 8px', fontSize: '0.75rem', marginTop: 2, color: '#92400e', borderColor: '#fcd34d' }}
-                  onClick={() => setOtp(devOtp || '123456')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#64748b',
+                    fontSize: '0.78rem',
+                    cursor: 'pointer',
+                    padding: '2px 4px',
+                  }}
+                  onClick={() => setShowPassword(!showPassword)}
                 >
-                  ⚡ Re-fill OTP ({devOtp || '123456'})
+                  {showPassword ? 'Hide 👁️' : 'Show 👁️'}
                 </button>
               </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label" htmlFor="otp">{t('otp_label')}</label>
               <input
-                id="otp"
+                id="password"
                 className="form-input"
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]{6}"
-                maxLength={6}
-                placeholder="• • • • • •"
-                value={otp}
-                onChange={e => setOtp(e.target.value.replace(/\D/g, ''))}
-                required
-                autoComplete="one-time-code"
-                style={{ fontSize: '1.5rem', letterSpacing: '0.2em', textAlign: 'center' }}
+                type={showPassword ? 'text' : 'password'}
+                placeholder={t('password_placeholder')}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                style={{ fontSize: '1.1rem' }}
               />
+              <p className="text-muted text-xs mt-1" style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                Default demo password: <code>farmer123</code>
+              </p>
             </div>
-            {error && <p className="form-error">⚠ {error}</p>}
+          )}
 
-            <button className="btn btn--primary" type="submit" disabled={loading || otp.length < 6}>
-              {loading ? t('loading') : t('verify_otp')}
-            </button>
-
-            <div className="mt-4" style={{ textAlign: 'center' }}>
-              {countdown > 0 ? (
-                <span className="text-muted text-sm">Resend in {countdown}s</span>
-              ) : (
-                <button type="button" className="btn btn--ghost" onClick={requestOtp}>
-                  {t('otp_resend')}
-                </button>
-              )}
+          {/* Auth Input: Pattern Lock Mode */}
+          {authMode === 'pattern' && (
+            <div className="form-group mb-4">
+              <label className="form-label text-center block mb-2" style={{ fontWeight: 600 }}>
+                {t('pattern_label')}
+              </label>
+              <PatternLock
+                onComplete={(patternStr) => {
+                  setPattern(patternStr);
+                  setError('');
+                }}
+                value={pattern}
+                disabled={loading}
+              />
+              <p className="text-muted text-center text-xs mt-2" style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                Default demo pattern: <code>1-2-3-5</code>
+              </p>
             </div>
+          )}
 
-            <button type="button" className="btn btn--secondary mt-3 w-full" onClick={() => { setStep('mobile'); setOtp(''); setError(''); }}>
-              ← {t('back')}
-            </button>
-          </form>
-        )}
+          {error && (
+            <div
+              style={{
+                background: '#fef2f2',
+                border: '1px solid #fecaca',
+                color: '#b91c1c',
+                borderRadius: 10,
+                padding: '10px 14px',
+                fontSize: '0.85rem',
+                marginBottom: 16,
+              }}
+            >
+              ⚠ {error}
+            </div>
+          )}
+
+          {/* Submit Button */}
+          <button
+            className="btn btn--primary w-full"
+            type="submit"
+            disabled={
+              loading ||
+              mobile.length < 10 ||
+              (authMode === 'password' && !password) ||
+              (authMode === 'pattern' && !pattern)
+            }
+            style={{
+              padding: '14px',
+              fontSize: '1.05rem',
+              fontWeight: 700,
+              borderRadius: 14,
+            }}
+          >
+            {loading ? t('loading') : t('login_btn')}
+          </button>
+
+          {/* Auto-register hint */}
+          <p
+            className="text-center text-muted mt-3"
+            style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4 }}
+          >
+            {t('auto_register_note')}
+          </p>
+        </form>
 
         <hr className="divider mt-4" />
         <p className="text-center text-muted text-sm">
