@@ -40,12 +40,18 @@ export default function OfficerAssistedRegisterPage() {
         method: 'POST',
         body: JSON.stringify({
           ...form,
-          center_id: parseInt(form.center_id),
+          center_id: form.center_id,
           expected_quantity: parseFloat(form.expected_quantity),
         }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Registration failed');
+
+      let data = null;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try { data = await res.json(); } catch { data = null; }
+      }
+
+      if (!res.ok) throw new Error(data?.error || 'Registration failed');
       setSuccess(data);
     } catch (err) {
       setError(err.message);
