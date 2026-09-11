@@ -96,13 +96,44 @@ export default function DashboardPage() {
 
     try {
       const res = await apiFetch(`/api/farmers/${farmer.id}/status`);
-      const json = await res.json();
-      setData(json);
-      await saveFarmerStatus(farmer.id, json);
+      let json = null;
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        json = await res.json();
+      }
+      if (res.ok && json) {
+        setData(json);
+        await saveFarmerStatus(farmer.id, json);
+        return;
+      }
+      throw new Error('Non-JSON or error response');
     } catch {
-      // Fall back to cache
+      // Fall back to cache or demo state
       const cached = await getFarmerStatus(farmer.id);
-      if (cached) { setData(cached); setFromCache(true); }
+      if (cached) {
+        setData(cached);
+        setFromCache(true);
+      } else if (farmer?.mobile_number === '9876543210' || !farmer?.id) {
+        const demoData = {
+          registration: {
+            id: 'demo-reg-01',
+            crop_type: 'Paddy',
+            expected_quantity: 40,
+            status: 'scheduled',
+            created_at: new Date().toISOString(),
+          },
+          token: {
+            token_number: 'BLR-01',
+            center_name: 'Bellary APMC Procurement Center',
+            slot_date: new Date().toISOString().split('T')[0],
+            slot_time: '10:00 - 12:00',
+          },
+          payment: null,
+          synced_at: new Date().toISOString(),
+        };
+        setData(demoData);
+        await saveFarmerStatus(farmer.id || 'demo-farmer', demoData);
+      }
     } finally {
       setLoading(false);
     }
