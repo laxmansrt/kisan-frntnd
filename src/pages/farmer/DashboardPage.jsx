@@ -139,6 +139,8 @@ export default function DashboardPage() {
     }
   }
 
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
   if (loading) {
     return (
       <div className="state-box">
@@ -148,12 +150,73 @@ export default function DashboardPage() {
     );
   }
 
-  const { registration, token, payment } = data || {};
+  const allRegs = data?.all_registrations || [];
+  const activeItem = allRegs.length > 0 && allRegs[selectedIndex]
+    ? allRegs[selectedIndex]
+    : { registration: data?.registration, token: data?.token, payment: data?.payment, slot: data?.slot };
+
+  const { registration, token, payment } = activeItem;
   const currentStepIndex = registration ? STEPS.findIndex(s => s.key === registration.status) : -1;
 
   return (
     <div>
-      <h1 className="section-title">{t('dashboard_title')}</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+        <h1 className="section-title" style={{ margin: 0 }}>{t('dashboard_title')}</h1>
+        <button
+          className="btn btn--sm btn--primary"
+          style={{ fontSize: '0.82rem', padding: '6px 14px', borderRadius: 10, display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          onClick={() => navigate('/register')}
+        >
+          ➕ Register Another Crop
+        </button>
+      </div>
+
+      {/* Multiple Crops Switcher Tabs */}
+      {allRegs.length > 1 && (
+        <div style={{ marginBottom: 16, background: '#f8fafc', padding: '10px 12px', borderRadius: 14, border: '1px solid #e2e8f0' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#166534', marginBottom: 8, display: 'flex', justifyContent: 'space-between' }}>
+            <span>🌾 Registered Crops ({allRegs.length})</span>
+            <span style={{ color: '#64748b', fontWeight: 500 }}>Tap to switch crop</span>
+          </div>
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+            {allRegs.map((item, idx) => {
+              const isSel = idx === selectedIndex;
+              const r = item.registration || {};
+              const tok = item.token || {};
+              return (
+                <button
+                  key={r.id || r._id || idx}
+                  type="button"
+                  onClick={() => setSelectedIndex(idx)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 12px',
+                    borderRadius: 10,
+                    border: isSel ? '2px solid #1B5E3F' : '1px solid #cbd5e1',
+                    background: isSel ? '#f0fdf4' : '#ffffff',
+                    color: isSel ? '#166534' : '#475569',
+                    fontWeight: isSel ? 700 : 500,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    fontSize: '0.82rem',
+                    boxShadow: isSel ? '0 2px 6px rgba(27,94,63,0.12)' : 'none',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span>🌱 {r.crop_type || 'Crop'} ({r.expected_quantity || 0} Qtl)</span>
+                  {tok.token_number && (
+                    <span style={{ background: isSel ? '#1B5E3F' : '#94a3b8', color: '#fff', fontSize: '0.7rem', padding: '1px 5px', borderRadius: 6, fontWeight: 700 }}>
+                      #{tok.token_number}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Offline cache notice */}
       {fromCache && data?.synced_at && (
